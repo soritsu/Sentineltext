@@ -1,0 +1,767 @@
+# SentinelText — Especificación técnica y catálogo de reglas v1.0
+
+SIS120 · Lenguajes Formales y Autómatas · Línea base validada para diseño · 12 de octubre de 2026
+
+Perfecto. Con tus decisiones, SentinelText queda definido como un proyecto individual de 14 días, con una arquitectura Python + FastAPI para el backend, React + TypeScript para el frontend, sin persistencia y con un plazo estricto.
+
+La prioridad será entregar una aplicación funcional, comprobable y defendible académicamente. Si el tiempo se reduce, recortaremos las ampliaciones, no las pruebas ni la calidad del análisis léxico.
+
+La especificación conserva el objetivo central de la guía de SIS120: aplicar expresiones regulares a un problema concreto, implementar un programa funcional, evaluar sus resultados y documentar el trabajo.&#x20;
+
+Guia_Trabajo_Exploratorio_Expresiones_Regulares.docx
+
+
+
+## 1. Línea base técnica definitiva
+
+# SentinelText
+
+Detector léxico de señales de riesgo en mensajes
+
+Duración
+
+## 14 días
+
+Persistencia
+
+## Ninguna
+
+Backend
+
+### Python + FastAPI
+
+Frontend
+
+### React + TypeScript
+
+Restricciones inamovibles
+
+- No se almacenarán mensajes en una base de datos.
+- No se enviará el contenido a servicios externos.
+- No se abrirán las URL detectadas.
+- No se utilizará aprendizaje automático.
+- La clasificación será heurística, no una afirmación de que el mensaje sea fraudulento.
+- El MVP debe funcionar antes de añadir cualquier mejora opcional.
+
+### 1.1. Consecuencias de las decisiones
+
+| Decisión           | Implicación técnica                                                                                   |
+| ------------------ | ----------------------------------------------------------------------------------------------------- |
+| Python + FastAPI   | La lógica regex y la puntuación viven en el backend.                                                  |
+| React + TypeScript | La interfaz consume la API mediante JSON y mantiene tipos explícitos.                                 |
+| Sin persistencia   | Los resultados desaparecen al finalizar la sesión o recargar, salvo que el usuario exporte los datos. |
+| Plazo estricto     | Las funcionalidades se desarrollan en orden de prioridad, con un punto de congelación de alcance.     |
+| Trabajo individual | El repositorio, la documentación y las pruebas deben ser fáciles de mantener por una sola persona.    |
+
+Decisión adicional: el backend será la fuente de verdad. El frontend no recalculará puntuaciones ni duplicará expresiones regulares. Esto evita que la interfaz y la API produzcan resultados distintos.
+
+### 1.2. Arquitectura aprobada
+
+React + TypeScript
+
+Formulario, resultados, errores y exportación opcional
+
+HTTP · JSON · Desarrollo local
+
+FastAPI
+
+Validación de entrada · Endpoints · Respuestas
+
+Servicio de análisis
+
+Motor regex · Evidencias · Puntuación · Nivel de riesgo
+
+Catálogo
+
+Reglas versionadas
+
+Pruebas
+
+pytest y casos de regresión
+
+La comunicación entre frontend y backend se realizará en el entorno local durante el desarrollo. Configuraremos el origen permitido de CORS explícitamente, sin habilitar indiscriminadamente cualquier origen.
+
+## 2. Documento de requisitos del software (SRS)
+
+Esta sección será la base para el documento académico. Cada requisito tendrá un identificador estable para relacionarlo posteriormente con su implementación y sus pruebas.
+
+### 2.1. Propósito y usuarios
+
+Propósito: identificar señales textuales potencialmente sospechosas en mensajes, presentar las evidencias que activaron las reglas y asignar una puntuación reproducible.
+
+Usuario principal: estudiante, docente o usuario que quiera examinar un texto manualmente.
+
+Entorno de uso: navegador web y backend ejecutados localmente durante la demostración.
+
+Límite funcional: SentinelText detecta patrones explícitos. No comprende por completo el contexto, no confirma la identidad del remitente y no determina la veracidad de las afirmaciones.
+
+### 2.2. Requisitos funcionales
+
+P0: obligatorio para la entrega · P1: solo después de estabilizar el MVP.
+
+| ID    | Requisito                                                                     | Prioridad |
+| ----- | ----------------------------------------------------------------------------- | --------- |
+| RF-01 | Permitir introducir un mensaje de texto y solicitar el análisis.              | P0        |
+| RF-02 | Rechazar entradas vacías o formadas solo por espacios.                        | P0        |
+| RF-03 | Limitar la longitud del mensaje a 10.000 caracteres.                          | P0        |
+| RF-04 | Ejecutar todas las reglas habilitadas del catálogo.                           | P0        |
+| RF-05 | Registrar las coincidencias y sus posiciones en el texto original.            | P0        |
+| RF-06 | Calcular una puntuación entre 0 y 100 con una política determinista.          | P0        |
+| RF-07 | Asignar un nivel de riesgo según los umbrales aprobados.                      | P0        |
+| RF-08 | Explicar las señales detectadas y mostrar sus evidencias.                     | P0        |
+| RF-09 | Devolver resultados estructurados mediante la API REST.                       | P0        |
+| RF-10 | Mostrar carga, resultado, ausencia de coincidencias y errores en la interfaz. | P0        |
+| RF-11 | Ofrecer un endpoint de salud del backend.                                     | P0        |
+| RF-12 | Contar con pruebas unitarias e integración automatizadas.                     | P0        |
+| RF-13 | Resaltar visualmente los fragmentos coincidentes.                             | P1        |
+| RF-14 | Analizar un lote pequeño de mensajes.                                         | P1        |
+| RF-15 | Exportar resultados a CSV.                                                    | P1        |
+| RF-16 | Mostrar estadísticas básicas del análisis por lote.                           | P1        |
+
+### 2.3. Requisitos no funcionales
+
+| ID     | Requisito        | Criterio verificable                                                                                                            |
+| ------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| RNF-01 | Rendimiento      | Objetivo de menos de 500 ms de procesamiento backend por mensaje de hasta 10.000 caracteres, medido en el equipo de desarrollo. |
+| RNF-02 | Privacidad       | No transmitir mensajes a terceros ni registrarlos en logs de aplicación.                                                        |
+| RNF-03 | Seguridad        | Tratar el texto como datos; nunca ejecutarlo ni visitar sus URL.                                                                |
+| RNF-04 | Robustez         | Gestionar entradas inválidas con respuestas controladas.                                                                        |
+| RNF-05 | Mantenibilidad   | Separar API, motor de análisis y catálogo de reglas.                                                                            |
+| RNF-06 | Reproducibilidad | Documentar versiones de dependencias e instrucciones de instalación.                                                            |
+| RNF-07 | Usabilidad       | Mostrar nivel, puntuación y motivos de manera comprensible.                                                                     |
+| RNF-08 | Calidad          | Todas las pruebas obligatorias deben pasar antes de entregar.                                                                   |
+
+El límite de 500 ms es un objetivo de ingeniería, no una garantía universal. Documentaremos el entorno de medición y cualquier desviación.
+
+### 2.4. Contrato de datos
+
+El backend devolverá una respuesta con estructura estable. La interfaz dependerá de ese contrato, no de los detalles internos del motor.
+
+| Campo                    | Tipo        | Restricción                               |
+| ------------------------ | ----------- | ----------------------------------------- |
+| `score`                  | Entero      | Entre 0 y 100                             |
+| `level`                  | Enumeración | `low`, `medium` o `high`                  |
+| `matches`                | Lista       | Vacía o con las coincidencias encontradas |
+| `matches[].rule_id`      | Cadena      | ID existente en el catálogo               |
+| `matches[].category`     | Cadena      | Categoría definida por la regla           |
+| `matches[].matched_text` | Cadena      | Fragmento exacto del mensaje original     |
+| `matches[].start`        | Entero      | Índice inicial, incluido                  |
+| `matches[].end`          | Entero      | Índice final, excluido                    |
+| `matches[].description`  | Cadena      | Explicación comprensible                  |
+| `disclaimer`             | Cadena      | Advertencia sobre las limitaciones        |
+
+El contrato no incluirá el mensaje completo en una respuesta de error. Las respuestas de análisis sí podrán incluir las coincidencias exactas necesarias para explicar el resultado.
+
+### 2.5. Tratamiento de errores
+
+| Situación                           | Comportamiento esperado                                                                        |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Mensaje vacío                       | Rechazo de validación; no ejecutar el motor                                                    |
+| Mensaje de más de 10.000 caracteres | Rechazo de validación                                                                          |
+| JSON inválido                       | Respuesta HTTP de error, sin traza interna                                                     |
+| Backend inaccesible                 | La interfaz informa que no puede conectarse                                                    |
+| Texto sin coincidencias             | Resultado válido con lista vacía y puntuación cero                                             |
+| Error inesperado                    | Error controlado y detalle técnico solo en registros de desarrollo que no contengan el mensaje |
+
+## 3. Catálogo detallado de reglas regex
+
+Vamos a diseñar un catálogo inicial de siete reglas, con una octava regla opcional si terminamos el MVP a tiempo. Las reglas se activarán individualmente, y cada una tendrá ejemplos positivos, negativos, límites y criterios de aceptación.
+
+Las expresiones que siguen son propuestas para revisión técnica. No son código de implementación del sistema: constituyen la especificación del comportamiento que después implementaremos y verificaremos.
+
+### Convenciones comunes
+
+- Motor: expresiones regulares de Python (`re`).
+- Las cadenas de patrones se representarán como raw strings (`r"..."`) en la implementación.
+- Las reglas que deban ignorar mayúsculas y minúsculas usarán `re.IGNORECASE`.
+- Los índices de coincidencia se calcularán sobre el texto original, sin normalizarlo antes de obtener las posiciones.
+- No se eliminarán tildes del texto original.
+- Los patrones se probarán con texto en español y con caracteres Unicode.
+- Los ejemplos negativos son requisitos de comportamiento: si un patrón los acepta incorrectamente, habrá que corregirlo o documentar explícitamente su alcance.
+
+## Regla URL-001 — Detección de enlaces HTTP/HTTPS
+
+### URL-001
+
+Peso: 15
+
+Categoría: enlaces · Tipo: regex · Prioridad: P0
+
+Objetivo: identificar URL explícitas que comiencen con `http://` o `https://`.
+
+Patrón candidato:
+
+```
+(?i)\bhttps?://[^\s<>"']+
+```
+
+Ejemplos positivos
+
+- `Visita https://example.com`
+- `Enlace: http://sitio.example/oferta`
+- `Consulta https://example.com/ayuda?id=10`
+
+Ejemplos negativos
+
+- `Consulta example.com sin esquema`
+- `El texto contiene https pero no una URL completa`
+- `No hay ningún enlace en este mensaje`
+
+Casos límite
+
+- URL seguida de coma, punto o paréntesis.
+- URL seguida de un salto de línea.
+- URL con parámetros y fragmentos.
+- URL con comillas alrededor.
+- URL con caracteres no ASCII.
+
+Criterios de aceptación
+
+- Debe reconocer los esquemas HTTP y HTTPS sin distinguir mayúsculas.
+- No debe reconocer un dominio aislado sin esquema.
+- Debe conservar los índices del fragmento reconocido.
+- Los signos de puntuación finales que pertenezcan a la oración no deben aparecer en la URL presentada al usuario.
+
+Decisión de diseño: el patrón candidato puede capturar puntuación final. En la implementación tendremos que definir un procedimiento de recorte controlado y comprobar que los índices se ajusten al fragmento presentado. No se modificará la URL ni se intentará comprobar si el sitio existe.
+
+### Regla URG-001 — Lenguaje de urgencia
+
+### URG-001
+
+Peso: 15
+
+Categoría: urgencia · Tipo: regex · Prioridad: P0
+
+Objetivo: reconocer términos explícitos que sugieran presión temporal.
+
+Patrón candidato:
+
+```
+(?i)\b(?:urgente|urgencia|inmediatamente|ahora mismo|última oportunidad|ultimo aviso|plazo inmediato)\b
+```
+
+Ejemplos positivos
+
+- `URGENTE: verifica tu cuenta`
+- `Responde inmediatamente`
+- `Esta es tu última oportunidad`
+- `Necesitamos una respuesta ahora mismo`
+
+Ejemplos negativos
+
+- `La atención no es urgente`
+- `El informe describe una urgencia médica`
+- `El mensaje se recibió ayer`
+- `Ahora mismo estamos en clase`
+
+Casos límite
+
+- Palabras acentuadas y sin tilde.
+- Variaciones de mayúsculas.
+- Espacios repetidos entre palabras.
+- Variantes lingüísticas que no estén incluidas en el catálogo.
+- Frases de urgencia citadas para advertir contra ellas.
+
+Criterios de aceptación
+
+- Debe reconocer los términos incluidos en el patrón, independientemente de las mayúsculas.
+- Las coincidencias deben respetar límites de palabra.
+- No se afirmará que toda urgencia es maliciosa.
+- Las variantes no contempladas se registrarán como limitaciones, no como fallos inesperados.
+
+El ejemplo negativo que contiene la palabra «urgencia» demuestra una limitación importante: una regex de palabras clave puede reconocer la misma expresión en contextos legítimos. No intentaremos resolver toda la semántica con un patrón más complejo.
+
+### Regla CRED-001 — Solicitud de datos de acceso
+
+### CRED-001
+
+Peso: 25
+
+Categoría: credenciales · Tipo: regex · Prioridad: P0
+
+Objetivo: detectar frases en las que una acción de solicitud o verificación aparezca próxima a una referencia a credenciales.
+
+Patrón candidato:
+
+```
+(?i)\b(?:ingresa|introduce|envía|envia|confirma|verifica|actualiza)\b.{0,40}\b(?:contraseña|contrasena|clave|password|código de verificación|codigo de verificacion|código OTP|codigo OTP|datos de acceso)\b
+```
+
+Ejemplos positivos
+
+- `Ingresa tu contraseña para continuar`
+- `Verifica tu código de verificación`
+- `Actualiza tu clave de acceso`
+- `Confirma tu password en el formulario`
+
+Ejemplos negativos
+
+- `Nunca compartas tu contraseña`
+- `La contraseña debe tener doce caracteres`
+- `Aprenderemos a verificar la seguridad de las claves`
+- `El sistema actualiza automáticamente la configuración`
+
+Casos límite
+
+- Acción y credencial separadas por más de 40 caracteres.
+- Salto de línea entre ambas expresiones.
+- Variantes con o sin tilde.
+- Negaciones como «no introduzcas tu contraseña».
+- Menciones de credenciales en documentación legítima.
+
+Criterios de aceptación
+
+- Debe identificar los pares de términos incluidos dentro de la distancia configurada.
+- No debe puntuar una mención aislada de «contraseña» como si fuera una solicitud.
+- Debe documentar que las negaciones y el contexto pueden generar falsos positivos.
+- No almacenará ni procesará credenciales reales fuera del análisis textual.
+
+La distancia de 40 caracteres es un parámetro inicial que comprobaremos con los ejemplos. El patrón no es un detector completo de phishing: puede fallar ante sinónimos, cambios de orden o mensajes redactados de otra manera.
+
+### Regla PRIZE-001 — Promesa de premio y llamada a reclamar
+
+### PRIZE-001
+
+Peso: 15
+
+Categoría: premios · Tipo: regex · Prioridad: P0
+
+Objetivo: detectar mensajes que combinen un término de premio con una llamada a reclamar, cobrar o participar.
+
+Patrón candidato:
+
+```
+(?is)\b(?:premio|ganador|ganaste|has ganado|regalo|recompensa)\b.{0,80}\b(?:reclama|reclamar|cobra|cobrar|participa|haz clic|hacer clic)\b
+```
+
+Ejemplos positivos
+
+- `Ganaste un premio, reclama ahora`
+- `Has ganado un regalo. Haz clic para cobrar`
+- `Premio especial: participa para reclamarlo`
+
+Ejemplos negativos
+
+- `El premio se entregará en la ceremonia`
+- `Reclama tu certificado de asistencia`
+- `La campaña explica cómo evitar los premios fraudulentos`
+- `Participa en el concurso de programación`
+
+Casos límite
+
+- Llamada a reclamar antes de la mención del premio.
+- Frases separadas por más de 80 caracteres.
+- Negaciones y mensajes educativos.
+- Mensajes que anuncian premios legítimos.
+- Variantes de conjugación no incluidas.
+
+Criterios de aceptación
+
+- Debe detectar la secuencia definida de premio seguida de llamada a la acción.
+- No debe detectar una mención aislada de «premio».
+- La distancia máxima debe verificarse con casos de 80 y 81 caracteres.
+- La regla se describirá como indicio textual, nunca como prueba de fraude.
+
+La dirección de la secuencia es una decisión deliberada para limitar falsos positivos. Si las pruebas muestran que es insuficiente, podremos evaluar una segunda alternativa en lugar de ampliar indiscriminadamente el patrón.
+
+### Regla MONEY-001 — Referencias monetarias
+
+### MONEY-001
+
+Informativa: 0 puntos
+
+Categoría: dinero · Tipo: regex · Prioridad: P0
+
+Objetivo: reconocer cantidades monetarias que puedan servir como evidencia complementaria.
+
+Patrón candidato:
+
+```
+(?i)\b(?:Bs\.?|BOB|USD|\$)\s?\d+(?:[.,]\d{1,2})?\b
+```
+
+Ejemplos positivos
+
+- `Precio: Bs 250`
+- `Importe: Bs. 150,50`
+- `Oferta de USD 35.50`
+- `Premio de $20`
+
+Ejemplos negativos
+
+- `El precio es de 250 unidades`
+- `El presupuesto está pendiente`
+- `Se realizará el día 15/04/2026`
+- `El número de estudiante es 2026001`
+
+Casos límite
+
+- Separadores de miles.
+- Espacios entre símbolo y cantidad.
+- Montos negativos.
+- Tres o más decimales.
+- Símbolos de moneda ambiguos, como `$`.
+
+Criterios de aceptación
+
+- Debe reconocer los formatos monetarios definidos.
+- No debe interpretar automáticamente cualquier número como dinero.
+- Debe documentar los formatos monetarios no admitidos.
+- No aportará puntos de riesgo por sí sola en la versión inicial.
+
+Esta regla aporta evidencia para la interfaz y la evaluación, pero no representa por sí misma una señal fiable de fraude. En particular, el símbolo `$` no identifica una moneda única.
+
+### Regla STYLE-001 — Exceso de signos de exclamación
+
+### STYLE-001
+
+5 puntos
+
+Categoría: estilo · Tipo: regex · Prioridad: P0
+
+Objetivo: detectar secuencias de tres o más signos de exclamación consecutivos.
+
+Patrón candidato:
+
+```
+!{3,}
+```
+
+Ejemplos positivos
+
+- `URGENTE!!!`
+- `Oferta especial!!!!`
+- `No lo pierdas!!!!!`
+
+Ejemplos negativos
+
+- `Oferta especial!`
+- `Atención!!`
+- `No olvides revisar el correo.`
+
+Casos límite
+
+- Dos signos seguidos.
+- Tres signos separados por espacios.
+- Signos de interrogación mezclados con exclamación.
+- Texto que cita un ejemplo de puntuación excesiva.
+
+Criterios de aceptación
+
+- Debe reconocer secuencias de tres o más signos consecutivos.
+- Debe aceptar cualquier longitud de secuencia superior a tres.
+- No debe reconocer dos signos como una coincidencia.
+- Se contará una sola vez para la puntuación por mensaje, aunque existan varias secuencias.
+
+### Regla STYLE-002 — Proporción elevada de mayúsculas
+
+### STYLE-002
+
+5 puntos
+
+Categoría: estilo · Tipo: análisis mixto · Prioridad: P0
+
+Objetivo: identificar mensajes cuyo contenido alfabético esté compuesto en gran proporción por letras mayúsculas.
+
+Esta regla no se resolverá únicamente mediante una expresión regular. Utilizaremos una regex para extraer letras y código convencional para comparar mayúsculas con el total de letras.
+
+Patrón de extracción candidato:
+
+```
+[^\W\d_]
+```
+
+En Python, con Unicode, permite extraer caracteres alfabéticos excluyendo dígitos y guion bajo.
+
+Definiremos:
+
+\\[ R=\frac{M}{L} \\]
+
+Donde \\(M\\) es el número de letras mayúsculas y \\(L\\) el número total de letras.
+
+Umbral inicial: \\(R \geq 0.70\\), con un mínimo de 20 letras para evitar puntuar mensajes muy cortos.
+
+Ejemplos positivos
+
+- `ATENCIÓN SU CUENTA SERÁ BLOQUEADA SI NO RESPONDE AHORA MISMO`
+- `GANASTE UN PREMIO EXCLUSIVO Y DEBES RECLAMARLO INMEDIATAMENTE`
+
+Ejemplos negativos
+
+- `Atención: revisa tu cuenta cuando puedas.`
+- `ESTO ES URGENTE` (demasiado corto para cumplir el mínimo de letras).
+- `El texto normal combina MAYÚSCULAS y minúsculas.`
+
+Casos límite
+
+- Mensajes con menos de 20 letras.
+- Letras acentuadas en mayúsculas.
+- Números, símbolos y emojis.
+- Texto sin letras.
+- Mensajes escritos legítimamente en mayúsculas, como ciertos avisos.
+
+Criterios de aceptación
+
+- El denominador incluirá solo letras, no espacios, números ni símbolos.
+- La proporción se calculará con caracteres Unicode reconocidos por Python.
+- Un mensaje con menos de 20 letras no recibirá puntos por esta regla.
+- El umbral se probará con proporciones justo por debajo y justo por encima de 0,70.
+
+### Regla opcional URL-002 — URL con dirección IP
+
+Esta regla queda en reserva para el final de la segunda semana.
+
+Objetivo: identificar URL cuya autoridad aparente utilice una dirección IPv4 en lugar de un dominio convencional.
+
+Ejemplos que debería reconocer:
+
+- `http://192.0.2.10/login`
+- `https://203.0.113.25/account`
+
+Ejemplos que no debería reconocer:
+
+- `https://example.com/login`
+- `El número 192.0.2.10 aparece sin esquema URL`
+
+La regla deberá comprobar que la IP tenga cuatro componentes numéricos entre 0 y 255. No debe limitarse a detectar cuatro grupos de dígitos. Si se implementa, la validación de la dirección podrá combinar regex con comprobación de componentes en Python.
+
+Esta ampliación no es requisito de la primera entrega.
+
+## 4. Matriz de aceptación de los patrones
+
+Esta matriz convierte el catálogo en pruebas concretas que podremos ejecutar durante el desarrollo.
+
+| ID de prueba | Entrada o condición                                 | Resultado esperado                                                     |
+| ------------ | --------------------------------------------------- | ---------------------------------------------------------------------- |
+| REG-001      | `https://example.com`                               | URL-001 detecta el enlace                                              |
+| REG-002      | `example.com`                                       | URL-001 no detecta coincidencia                                        |
+| REG-003      | `¡URGENTE!`                                         | URG-001 detecta `URGENTE`                                              |
+| REG-004      | `La atención no es urgente`                         | URG-001 detecta el término; la limitación contextual queda documentada |
+| REG-005      | `Ingresa tu contraseña para continuar`              | CRED-001 detecta la secuencia                                          |
+| REG-006      | `Nunca compartas tu contraseña`                     | CRED-001 no detecta la secuencia definida                              |
+| REG-007      | `Ganaste un premio, reclama ahora`                  | PRIZE-001 detecta la secuencia                                         |
+| REG-008      | `El premio se entregará en la ceremonia`            | PRIZE-001 no detecta coincidencia                                      |
+| REG-009      | `Precio: Bs 250`                                    | MONEY-001 detecta el monto                                             |
+| REG-010      | `El precio es de 250 unidades`                      | MONEY-001 no detecta monto                                             |
+| REG-011      | `Oferta!!!!`                                        | STYLE-001 detecta cuatro signos                                        |
+| REG-012      | `Oferta!!`                                          | STYLE-001 no detecta coincidencia                                      |
+| REG-013      | Mensaje con 19 letras en mayúsculas                 | STYLE-002 no puntúa por no alcanzar el mínimo de letras                |
+| REG-014      | Mensaje con 20 letras, todas mayúsculas             | STYLE-002 cumple el umbral                                             |
+| REG-015      | Mensaje con 70 % de mayúsculas y 20 letras          | STYLE-002 puntúa                                                       |
+| REG-016      | Mensaje con 69 % de mayúsculas y al menos 20 letras | STYLE-002 no puntúa                                                    |
+
+Hay dos precisiones importantes para estas pruebas:
+
+1. El número de letras se contará después de extraerlas, no contando la longitud completa del mensaje.
+2. Para los casos de 69 % y 70 %, construiremos textos cuya proporción sea matemáticamente exacta. No usaremos ejemplos aproximados que puedan generar resultados ambiguos.
+
+En las reglas con distancia máxima, como CRED-001 y PRIZE-001, añadiremos casos justo dentro y justo fuera del límite. Así comprobaremos que el patrón cumple la especificación y no solo que funciona con ejemplos sencillos.
+
+## 5. Política de puntuación definitiva para el MVP
+
+La puntuación será determinista. No dependerá del orden en que se ejecuten las reglas ni del número de veces que se repita una misma señal.
+
+| Regla     | Peso              | Cuenta para el riesgo |
+| --------- | ----------------- | --------------------- |
+| URL-001   | 15                | Sí                    |
+| URG-001   | 15                | Sí                    |
+| CRED-001  | 25                | Sí                    |
+| PRIZE-001 | 15                | Sí                    |
+| MONEY-001 | 0                 | No, informativa       |
+| STYLE-001 | 5                 | Sí                    |
+| STYLE-002 | 5                 | Sí                    |
+| URL-002   | 15, si se aprueba | Sí                    |
+
+La fórmula será:
+
+\\[ S=\min\left(100,\sum\_{r \in A}w_r\right) \\]
+
+Donde \\(A\\) contiene las reglas de riesgo activadas y \\(w_r\\) es el peso de cada regla. Cada regla contribuye una sola vez por mensaje.
+
+Los niveles quedan definidos así:
+
+| Puntuación | Nivel |
+| ---------- | ----- |
+| 0–24       | Bajo  |
+| 25–49      | Medio |
+| 50–100     | Alto  |
+
+### Ejemplos de cálculo
+
+Escenario A: un enlace HTTP
+
+Bajo
+
+URL-001 = 15 puntos
+
+#### 15/100
+
+Escenario B: solicitud de credenciales
+
+Medio
+
+CRED-001 + URG-001 = 40 puntos
+
+#### 40/100
+
+Escenario C: múltiples señales
+
+Alto
+
+URL-001 + URG-001 + CRED-001 + PRIZE-001 = 70 puntos
+
+#### 70/100
+
+Estos escenarios son ejemplos aritméticos para verificar la fórmula, no resultados de un detector ya implementado.
+
+### Criterios de aceptación de la puntuación
+
+- Una regla de peso cero puede producir una coincidencia informativa, pero no sumar puntos.
+- Repetir una regla no multiplica su peso.
+- La puntuación nunca puede ser negativa ni superar 100.
+- Los límites 24/25 y 49/50 deben comprobarse explícitamente.
+- Un mensaje sin reglas de riesgo activadas obtiene cero puntos, aunque contenga coincidencias informativas.
+- La interfaz debe mostrar que se trata de una puntuación heurística, no una probabilidad de fraude.
+
+## 6. Diseño de pruebas del sistema completo
+
+Además de probar los patrones por separado, necesitamos demostrar que la aplicación integrada se comporta correctamente.
+
+### Pruebas de extremo a extremo
+
+| ID     | Escenario                                      | Resultado esperado                                             |
+| ------ | ---------------------------------------------- | -------------------------------------------------------------- |
+| E2E-01 | Abrir la aplicación y enviar un mensaje normal | Se muestran los resultados sin error                           |
+| E2E-02 | Enviar un mensaje con varias señales           | Se presentan todas las coincidencias y la puntuación combinada |
+| E2E-03 | Enviar un mensaje sin señales de riesgo        | Se muestra nivel bajo, puntuación cero y lista vacía           |
+| E2E-04 | Enviar una entrada vacía                       | La interfaz muestra un error comprensible                      |
+| E2E-05 | Enviar un mensaje de más de 10.000 caracteres  | El backend lo rechaza                                          |
+| E2E-06 | Simular que el backend no responde             | La interfaz muestra un error recuperable                       |
+| E2E-07 | Introducir texto con etiquetas HTML            | Se presenta como texto y no se ejecuta                         |
+| E2E-08 | Analizar dos mensajes consecutivos             | Los resultados no se mezclan                                   |
+| E2E-09 | Analizar texto con tildes y emojis             | La interfaz conserva el texto original                         |
+| E2E-10 | Exportar resultados, si se incluye CSV         | El archivo conserva correctamente los datos                    |
+
+### Conjunto de evaluación
+
+Prepararemos un corpus pequeño de mensajes sintéticos. Para evitar que las métricas sean engañosas, separaremos:
+
+- Mensajes normales.
+- Mensajes con una única señal.
+- Mensajes con múltiples señales.
+- Mensajes ambiguos o legítimos que contienen palabras sospechosas.
+- Mensajes que deberían activar una regla pero no la activan.
+- Mensajes que parecen sospechosos, pero no contienen ninguno de los patrones implementados.
+
+Cada mensaje tendrá una etiqueta de evaluación y una justificación. La etiqueta de evaluación describirá las señales esperadas; no afirmará que el mensaje sea objetivamente fraudulento sin evidencia independiente.
+
+### Métricas que informaremos
+
+- Verdaderos positivos (TP): mensajes positivos correctamente identificados según las etiquetas de evaluación.
+- Falsos positivos (FP): mensajes negativos identificados erróneamente como positivos.
+- Falsos negativos (FN): mensajes positivos que el detector no identifica.
+- Precisión: \\(TP/(TP+FP)\\).
+- Exhaustividad: \\(TP/(TP+FN)\\).
+
+Si no existen positivos o negativos en una categoría, la métrica correspondiente se marcará como no calculable en vez de presentarse como cero. Además, separaremos la evaluación de reglas individuales de la evaluación de la clasificación global.
+
+## 7. Criterios de salida por fase
+
+No avanzaremos solo porque haya terminado un día. Cada fase necesita evidencia de que el trabajo está completo.
+
+### Puertas de calidad
+
+1. Diseño aprobado: requisitos identificados, alcance cerrado y reglas definidas.
+2. Motor aprobado: cada regla tiene pruebas positivas, negativas y de límites; los resultados son reproducibles.
+3. API aprobada: entradas, respuestas, validaciones y errores cumplen el contrato.
+4. Interfaz aprobada: se puede completar el flujo principal y visualizar resultados correctamente.
+5. Integración aprobada: pruebas unitarias, de API y de extremo a extremo pasan.
+6. Entrega aprobada: instalación desde cero, README, informe, evidencias y presentación preparados.
+
+### Qué se recorta si falta tiempo
+
+El orden de recorte será:
+
+1. URL-002, por ser una ampliación.
+2. Estadísticas avanzadas.
+3. Historial temporal.
+4. Resaltado sofisticado y mejoras visuales.
+5. Análisis por lotes, si amenaza el cierre del MVP.
+
+No recortaremos el motor principal, el contrato de la API, las pruebas obligatorias, el tratamiento seguro del texto ni la documentación necesaria para ejecutar y defender el proyecto.
+
+## 8. Organización del repositorio y documentación
+
+La estructura definitiva se concretará en el día 3, pero la organización lógica queda establecida:
+
+sentineltext/
+
+backend/
+
+API, esquemas, motor regex, catálogo y pruebas Python
+
+frontend/
+
+Interfaz React, tipos TypeScript y pruebas
+
+docs/
+
+Requisitos, arquitectura, catálogo regex, matriz de pruebas y decisiones técnicas
+
+data/
+
+Corpus sintético de evaluación sin datos personales reales
+
+README.md
+
+Requisitos previos, instalación, ejecución y uso
+
+pyproject.toml
+
+Configuración Python, dependencias y herramientas de calidad
+
+package.json + lockfile
+
+Dependencias frontend reproducibles
+
+.gitignore
+
+Entornos virtuales, cachés y archivos locales
+
+Los documentos que generaremos serán:
+
+- `requirements-specification.md`: requisitos funcionales y no funcionales.
+- `regex-catalog.md`: patrones, semántica, ejemplos y límites.
+- `test-plan.md`: casos de prueba y criterios de aceptación.
+- `architecture.md`: componentes, flujo de datos y contratos.
+- `README.md`: instrucciones reproducibles.
+- Informe académico final conforme a la estructura de la guía de SIS120.
+
+No necesitamos crear todos los documentos como archivos todavía. Primero debemos validar que el contenido de la especificación es coherente.
+
+## 9. Decisiones que quedan fijadas y decisiones pendientes
+
+Fijado
+
+Arquitectura Python + FastAPI y React + TypeScript; persistencia desactivada; 14 días; trabajo individual; prioridades P0/P1; contrato conceptual de API; puntuación heurística y catálogo inicial.
+
+Pendiente de validación técnica
+
+Los patrones exactos, los casos ambiguos, el recorte de puntuación de cada regla y la selección final de dependencias deben comprobarse con pruebas. El catálogo de esta especificación es la línea base para esas verificaciones, no una afirmación de que los patrones ya sean perfectos.
+
+La especificación ya está suficientemente definida para iniciar la siguiente fase de diseño. Sin embargo, todavía no hemos ejecutado los patrones ni validado empíricamente sus falsos positivos y negativos; eso deberá suceder antes de declarar el catálogo aprobado.
+
+## 10. Próximo paso: revisión formal del diseño
+
+Antes de programar, propongo cerrar la revisión con estos cuatro puntos:
+
+1. Confirmar que las siete reglas iniciales cubren suficientemente el objetivo académico.
+2. Revisar si las reglas CRED-001 y PRIZE-001 necesitan variantes adicionales para reducir falsos negativos.
+3. Aprobar los pesos iniciales como hipótesis de trabajo, sujetos a evaluación.
+4. Verificar la matriz de pruebas y convertirla en una lista de aceptación definitiva.
+
+Mi recomendación es no añadir más funcionalidades por ahora. Con siete reglas, una puntuación explicable, una API, una interfaz y un corpus de evaluación tenemos suficiente contenido para un proyecto mediano en dos semanas.
+
+Una vez validado el diseño, pasaremos a definir la arquitectura de carpetas con precisión, los modelos de datos de Pydantic, los contratos HTTP y el entorno de desarrollo. Solo después comenzaremos a implementar.
+
+La meta no es simplemente que SentinelText funcione: es que puedas justificar cada patrón, explicar cada decisión arquitectónica y demostrar mediante pruebas qué detecta correctamente y dónde falla.
