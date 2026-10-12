@@ -765,3 +765,660 @@ Mi recomendación es no añadir más funcionalidades por ahora. Con siete reglas
 Una vez validado el diseño, pasaremos a definir la arquitectura de carpetas con precisión, los modelos de datos de Pydantic, los contratos HTTP y el entorno de desarrollo. Solo después comenzaremos a implementar.
 
 La meta no es simplemente que SentinelText funcione: es que puedas justificar cada patrón, explicar cada decisión arquitectónica y demostrar mediante pruebas qué detecta correctamente y dónde falla.
+# SentinelText — Plan maestro del proyecto
+
+SIS120 · Lenguajes Formales y Autómatas · Proyecto individual · Duración: 14 días
+
+Vamos a definir SentinelText como un proyecto académico de tamaño mediano, con una arquitectura razonable para un desarrollador de nivel intermedio, pero limitado a dos semanas para que sea viable.
+
+La regla de trabajo será: primero especificar, después validar el diseño y finalmente programar. En esta etapa no escribiremos código de implementación.
+
+La guía de tu materia exige un programa funcional basado en expresiones regulares, pruebas, un informe escrito y una presentación oral. También contempla una interfaz gráfica, lectura de archivos y estadísticas como ampliaciones posibles. Nuestra planificación mantendrá ese objetivo académico como prioridad.&#x20;
+
+Guia_Trabajo_Exploratorio_Expresiones_Regulares.docx
+
+
+
+## 1. Definición oficial del proyecto
+
+# SentinelText
+
+Sistema de análisis léxico de mensajes sospechosos
+
+Problema que resolverá
+
+Los usuarios reciben mensajes que pueden contener señales textuales asociadas con phishing, spam, suplantación o intentos de engaño. Revisarlos manualmente puede ser difícil y poco consistente.
+
+SentinelText analizará el contenido de un mensaje, identificará patrones predefinidos, mostrará evidencias concretas y calculará una puntuación heurística de riesgo.
+
+Objetivo general
+
+Diseñar e implementar una aplicación web que utilice expresiones regulares para detectar señales de riesgo en mensajes de texto, explicar las coincidencias y evaluar su funcionamiento mediante pruebas reproducibles.
+
+14 días
+
+Desarrollo individual
+
+Aplicación web
+
+Sin ML
+
+Sin servicios externos
+
+### Qué será y qué no será
+
+- Será un analizador de patrones textuales, no un antivirus.
+- Será una herramienta de apoyo, no un sistema que certifique que un mensaje es fraudulento.
+- Utilizará reglas explícitas y puntuaciones configurables, no inteligencia artificial generativa ni aprendizaje automático.
+- No visitará enlaces, no descargará archivos ni enviará mensajes a servicios externos.
+- No necesitará cuentas de usuario ni una base de datos para cumplir su objetivo principal.
+
+Esta delimitación reduce los riesgos técnicos, protege la privacidad y deja más tiempo para diseñar buenas expresiones regulares y evaluar los resultados.
+
+## 2. Alcance aprobado para la planificación
+
+Para las dos semanas, recomiendo una aplicación web completa con backend y frontend separados, pero sin base de datos en la primera versión.
+
+Incluido en la entrega obligatoria
+
+- Analizar un mensaje individual.
+- Detectar coincidencias mediante regex.
+- Identificar categorías de riesgo y fragmentos encontrados.
+- Calcular una puntuación de 0 a 100.
+- Clasificar el resultado como bajo, medio o alto.
+- Explicar las señales detectadas.
+- Mostrar resultados en una interfaz web.
+- Ejecutar pruebas automatizadas.
+- Documentar el funcionamiento y sus limitaciones.
+
+Incluido si el núcleo está terminado
+
+- Analizar un lote pequeño de mensajes.
+- Resaltar coincidencias en el texto.
+- Mostrar estadísticas básicas.
+- Descargar resultados en CSV.
+- Conservar un historial temporal en la sesión del navegador.
+
+Fuera de alcance
+
+- Entrenamiento de modelos de IA.
+- Análisis semántico profundo.
+- Verificación automática de la reputación de dominios.
+- Integración con correo electrónico o redes sociales.
+- Autenticación, roles y administración multiusuario.
+- Base de datos persistente, salvo que se apruebe después como ampliación.
+
+El historial temporal no es almacenamiento permanente: al recargar o cerrar la aplicación, puede desaparecer. Lo implementaremos solo después de verificar que el núcleo funciona.
+
+## 3. Decisiones técnicas que fijaremos antes de programar
+
+La arquitectura propuesta utiliza tecnologías documentadas oficialmente. Python ofrece operaciones de búsqueda y extracción mediante `re`; FastAPI permite probar endpoints con `pytest` y `TestClient`; React admite TypeScript para definir los tipos de los componentes y sus datos.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://docs.python.org\&sz=32)
+
+Python 3.15.0 documentation
+
++2
+
+
+
+| Decisión               | Elección                       | Justificación                              |
+| ---------------------- | ------------------------------ | ------------------------------------------ |
+| Backend                | Python + FastAPI               | Separar el análisis léxico de la interfaz  |
+| Motor regex            | `re` de Python                 | Mantener el foco en la asignatura          |
+| Validación API         | Pydantic                       | Contratos claros de entrada y salida       |
+| Frontend               | React + TypeScript             | Componentes reutilizables y datos tipados  |
+| Persistencia           | Ninguna en el MVP              | Reducir riesgos y tiempo de implementación |
+| Historial opcional     | Memoria de sesión del frontend | No requiere servidor de base de datos      |
+| Pruebas                | pytest + TestClient            | Verificar reglas y endpoints               |
+| Formato de exportación | CSV                            | Fácil de generar y comprobar               |
+| Comunicación           | HTTP con JSON                  | Interfaz desacoplada del backend           |
+| Control de versiones   | Git                            | Mantener cambios pequeños y trazables      |
+
+No fijaremos todavía números de versión arbitrarios. En el día de configuración registraremos las versiones estables compatibles que instalemos y las guardaremos en los archivos de dependencias. La versión exacta debe quedar reproducible en el equipo donde se evalúe el proyecto.
+
+### Estructura lógica propuesta
+
+Frontend
+
+Entrada · Resultados · Historial · Exportación
+
+HTTP / JSON
+
+API
+
+Validación de solicitudes · Errores · Respuestas
+
+Servicio de análisis
+
+Orquestación de reglas · Puntuación · Clasificación
+
+Catálogo de reglas
+
+Patrones y metadatos
+
+Evaluación
+
+Pruebas y métricas
+
+Una decisión clave: las expresiones regulares no se definirán dentro de los endpoints HTTP. La API solicitará el análisis a un servicio independiente. Esto evita mezclar la lógica de negocio con la lógica de comunicación.
+
+## 4. Especificación de requisitos funcionales
+
+Cada requisito tendrá un identificador para que podamos relacionarlo con el diseño, el código, las pruebas y la documentación.
+
+Prioridad: P0 = indispensable; P1 = importante si queda tiempo; P2 = ampliación.
+
+| ID    | Requisito verificable                                                                               | Prioridad |
+| ----- | --------------------------------------------------------------------------------------------------- | --------- |
+| RF-01 | El usuario podrá introducir un mensaje y solicitar su análisis.                                     | P0        |
+| RF-02 | El sistema rechazará mensajes vacíos o compuestos únicamente por espacios.                          | P0        |
+| RF-03 | El backend detectará las coincidencias de las reglas habilitadas.                                   | P0        |
+| RF-04 | Cada coincidencia incluirá el ID de la regla, la categoría, el fragmento y su posición en el texto. | P0        |
+| RF-05 | El sistema calculará una puntuación limitada al intervalo 0–100.                                    | P0        |
+| RF-06 | La puntuación se traducirá a un nivel bajo, medio o alto mediante umbrales documentados.            | P0        |
+| RF-07 | El resultado explicará las señales detectadas y advertirá que no demuestra fraude.                  | P0        |
+| RF-08 | La interfaz mostrará estados de carga, éxito y error.                                               | P0        |
+| RF-09 | La API expondrá un endpoint de salud para verificar que el backend está operativo.                  | P0        |
+| RF-10 | El sistema dispondrá de pruebas automatizadas para el motor y la API.                               | P0        |
+| RF-11 | El usuario podrá analizar varios mensajes en una sola operación.                                    | P1        |
+| RF-12 | La interfaz resaltará las coincidencias sin alterar el contenido original.                          | P1        |
+| RF-13 | El usuario podrá descargar los resultados en CSV.                                                   | P1        |
+| RF-14 | La interfaz mostrará estadísticas del conjunto analizado.                                           | P1        |
+| RF-15 | El usuario podrá revisar los análisis recientes de la sesión.                                       | P1        |
+
+### Criterios de aceptación principales
+
+Estos criterios se comprobarán directamente, no mediante apreciaciones subjetivas.
+
+CA-01 — Mensaje válido
+
+Dado un mensaje no vacío, cuando se envía al backend, entonces la API devuelve un resultado estructurado con puntuación, nivel y coincidencias.
+
+CA-02 — Mensaje sin señales
+
+Dado un texto que no coincide con ninguna regla habilitada, entonces el motor devuelve cero coincidencias y puntuación cero, salvo que una regla de base esté expresamente documentada.
+
+CA-03 — Evidencia rastreable
+
+Para cada coincidencia, la posición inicial y final permiten recuperar exactamente el fragmento correspondiente del mensaje original.
+
+CA-04 — Puntuación válida
+
+Todas las respuestas de análisis contienen una puntuación entre 0 y 100, inclusive, y el nivel corresponde a los umbrales configurados.
+
+CA-05 — Entrada inválida
+
+Un mensaje vacío o demasiado largo se rechaza de manera controlada, sin provocar un error interno no gestionado.
+
+CA-06 — Funcionamiento reproducible
+
+El proyecto puede instalarse y ejecutarse desde un entorno limpio siguiendo exclusivamente las instrucciones del README.
+
+## 5. Requisitos no funcionales
+
+Además de las funcionalidades, vamos a definir condiciones de calidad que puedan comprobarse.
+
+| ID     | Requisito         | Criterio propuesto                                                                                                        |
+| ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| RNF-01 | Rendimiento       | Analizar un mensaje de hasta 10.000 caracteres en menos de 500 ms en el equipo de desarrollo, sin contar latencia de red. |
+| RNF-02 | Límite de entrada | El backend rechazará mensajes individuales de más de 10.000 caracteres.                                                   |
+| RNF-03 | Seguridad         | El sistema no abrirá automáticamente las URL detectadas ni ejecutará el contenido analizado.                              |
+| RNF-04 | Privacidad        | Los mensajes no se enviarán a terceros ni se registrarán en logs de aplicación.                                           |
+| RNF-05 | Mantenibilidad    | Las reglas tendrán identificadores, descripciones y pruebas independientes.                                               |
+| RNF-06 | Usabilidad        | El usuario podrá completar un análisis y localizar el nivel de riesgo sin consultar la documentación.                     |
+| RNF-07 | Compatibilidad    | La aplicación deberá funcionar en las versiones actuales de Chrome y Firefox disponibles en el equipo de pruebas.         |
+| RNF-08 | Reproducibilidad  | Las dependencias utilizadas estarán declaradas y las instrucciones de ejecución serán explícitas.                         |
+| RNF-09 | Calidad           | Todas las pruebas P0 pasarán antes de dar por terminada la entrega.                                                       |
+
+Los 500 ms son un objetivo de rendimiento para nuestro entorno, no una garantía universal. Registraremos el equipo, el tamaño de la entrada y el procedimiento de medición. Si el entorno no permite medirlo con fiabilidad, lo reportaremos como limitación.
+
+## 6. Diseño inicial del motor de reglas
+
+Este es el núcleo académico y el componente al que dedicaremos más atención.
+
+No basta con escribir patrones que encuentren palabras. Tenemos que definir qué lenguaje reconoce cada patrón, qué cadenas deben aceptar y cuáles deben rechazar.
+
+### Catálogo preliminar
+
+Las categorías son propuestas iniciales; los patrones definitivos se diseñarán y probarán durante la fase 3.
+
+| ID        | Categoría    | Objetivo                                                         |
+| --------- | ------------ | ---------------------------------------------------------------- |
+| URL-001   | Enlaces      | Identificar URL con esquemas HTTP o HTTPS                        |
+| URL-002   | Enlaces      | Detectar URL con direcciones IP, si se decide incluir esta regla |
+| URG-001   | Urgencia     | Reconocer expresiones como «urgente» e «inmediatamente»          |
+| CRED-001  | Credenciales | Detectar solicitudes explícitas de contraseñas o datos de acceso |
+| PRIZE-001 | Premios      | Detectar términos de premios y llamadas a reclamarlos            |
+| MONEY-001 | Dinero       | Detectar referencias monetarias y cantidades                     |
+| STYLE-001 | Estilo       | Identificar secuencias excesivas de signos de exclamación        |
+| STYLE-002 | Estilo       | Medir la proporción de letras mayúsculas en el mensaje           |
+
+El catálogo final tendrá, como mínimo, seis reglas regex funcionales, incluyendo reglas de categorías distintas. Las reglas estadísticas de estilo pueden utilizar expresiones regulares para extraer los elementos que se medirán y código convencional para calcular proporciones.
+
+### Contrato de una regla
+
+Cada regla deberá especificar:
+
+- `id`: identificador único.
+- `category`: categoría funcional.
+- `pattern`: expresión regular.
+- `description`: explicación visible para el usuario.
+- `severity`: nivel cualitativo de la señal.
+- `weight`: puntuación base.
+- `enabled`: si participa en el análisis.
+- `tests`: ejemplos positivos y negativos.
+
+No permitiremos patrones sin descripción ni reglas sin pruebas.
+
+### Diseño de la puntuación
+
+Proponemos una fórmula simple y determinista:
+
+\\[ S=\min\left(100,\sum\_{i=1}^{n} w_i\right) \\]
+
+Donde \\(w_i\\) es la puntuación aportada por cada regla activada. En la primera versión, cada regla aportará puntos como máximo una vez por mensaje, aunque encuentre varias coincidencias. Esto limita el impacto de la repetición artificial.
+
+Los umbrales iniciales serán:
+
+- Bajo: 0–24.
+- Medio: 25–49.
+- Alto: 50–100.
+
+Los pesos y umbrales se validarán con un conjunto de ejemplos etiquetados. Si dos reglas detectan la misma señal, revisaremos su solapamiento para evitar contar dos veces el mismo indicio.
+
+Importante: esta puntuación es un índice heurístico diseñado para el proyecto. No representa una probabilidad de fraude ni una clasificación validada para uso real de ciberseguridad.
+
+## 7. Contrato de la API
+
+Antes de implementar el backend, definiremos qué recibe y qué devuelve cada endpoint. Así evitaremos que la interfaz y el motor dependan de decisiones improvisadas.
+
+GET
+
+`/api/v1/health`
+
+Comprueba que el backend responde.
+
+Aceptación: devuelve HTTP 200 y un estado identificable como operativo.
+
+POST
+
+`/api/v1/analyze`
+
+Analiza un mensaje y devuelve puntuación, nivel, coincidencias y explicaciones.
+
+Aceptación: las entradas válidas producen una respuesta que cumple el esquema documentado; las inválidas producen un error controlado.
+
+POST · P1
+
+`/api/v1/analyze/batch`
+
+Analiza una colección limitada de mensajes.
+
+Aceptación: cada mensaje tiene un resultado individual y el sistema rechaza lotes que superen el límite establecido.
+
+### Esquema conceptual de la solicitud
+
+```
+{
+  "text": "Mensaje que se desea analizar"
+}
+```
+
+### Esquema conceptual de la respuesta
+
+```
+{
+  "score": 45,
+  "level": "medium",
+  "matches": [
+    {
+      "rule_id": "URG-001",
+      "category": "urgency",
+      "matched_text": "urgente",
+      "start": 0,
+      "end": 7,
+      "description": "Se detectó lenguaje de urgencia"
+    }
+  ],
+  "disclaimer": "El resultado no demuestra que el mensaje sea fraudulento."
+}
+```
+
+Los valores de este ejemplo son ilustrativos; no representan el resultado real de una ejecución. Durante el diseño definitivo especificaremos los campos obligatorios, sus tipos, los límites y el formato de errores. Los índices `start` y `end` usarán intervalos semiabiertos, es decir, el inicio está incluido y el final excluido.
+
+## 8. Plan de trabajo detallado: 14 días
+
+La planificación supone unas 4–6 horas de trabajo por día. Es una estimación para una persona con experiencia intermedia; no es una garantía de finalización.
+
+## Calendario de desarrollo
+
+14 días
+
+Día 1
+
+Especificación
+
+Problema, objetivos, alcance, requisitos y criterios de aceptación.
+
+Entregable: Documento de requisitos
+
+Control: Alcance aprobado
+
+Día 2
+
+Diseño regex
+
+Definir categorías, patrones candidatos, ejemplos positivos y negativos.
+
+Entregable: Catálogo inicial de reglas
+
+Control: Reglas comprobables
+
+Día 3
+
+Diseño técnico
+
+Arquitectura, esquema API, contrato de datos y estructura del proyecto.
+
+Entregable: Diseño técnico
+
+Control: Interfaces definidas
+
+Día 4
+
+Configuración
+
+Crear repositorio, entornos, dependencias, comandos y configuración.
+
+Entregable: Proyecto ejecutable
+
+Control: Instalación reproducible
+
+Día 5
+
+Motor regex
+
+Implementar reglas, coincidencias, posiciones y explicaciones.
+
+Entregable: Motor de análisis
+
+Control: Pruebas unitarias de reglas
+
+Día 6
+
+Puntuación
+
+Combinar señales, limitar puntuación, clasificar y tratar duplicados.
+
+Entregable: Servicio de análisis
+
+Control: Resultados deterministas
+
+Día 7
+
+API
+
+Crear endpoints, validación, errores controlados y documentación.
+
+Entregable: API funcional
+
+Control: Pruebas HTTP satisfactorias
+
+Día 8
+
+Interfaz básica
+
+Construir formulario, estados de carga, errores y resultados.
+
+Entregable: Primer frontend conectado
+
+Control: Flujo completo operativo
+
+Día 9
+
+Interfaz de resultados
+
+Mejorar explicación, visualización de coincidencias y accesibilidad.
+
+Entregable: Interfaz principal
+
+Control: Resultados comprensibles
+
+Día 10
+
+Integración
+
+Verificar comunicación, esquemas, límites y casos de error.
+
+Entregable: Aplicación integrada
+
+Control: Sin fallos críticos conocidos
+
+Día 11
+
+Pruebas ampliadas
+
+Casos límite, regresión, rendimiento y ejemplos ambiguos.
+
+Entregable: Informe de pruebas
+
+Control: Todos los P0 aprobados
+
+Día 12
+
+Ampliaciones
+
+Lote, historial temporal, CSV o estadísticas, priorizando lo que aporte más valor.
+
+Entregable: Mejoras P1
+
+Control: El MVP sigue estable
+
+Día 13
+
+Documentación
+
+README, informe académico, metodología, resultados y limitaciones.
+
+Entregable: Documentación completa
+
+Control: Reproducción desde cero
+
+Día 14
+
+Entrega
+
+Correcciones finales, capturas, ensayo de exposición y versión etiquetada.
+
+Entregable: Paquete final
+
+Control: Lista de aceptación completa
+
+### Reglas de gestión del tiempo
+
+1. Si el motor no funciona correctamente al terminar el día 6, se posponen las ampliaciones.
+2. Si la API no está integrada al día 7, reduciremos el alcance del frontend antes de sacrificar las pruebas.
+3. El día 12 solo se desarrollarán funcionalidades adicionales si todos los requisitos P0 están implementados.
+4. Los días 13 y 14 quedan reservados para documentación, correcciones y entrega; no se usarán para iniciar módulos grandes.
+
+Si el profesor exige que la interfaz sea especialmente elaborada, reduciremos primero el número de ampliaciones, no la calidad de las pruebas ni el rigor de los patrones.
+
+## 9. Plan de pruebas verificable
+
+El conjunto de pruebas debe demostrar no solo que el programa funciona, sino también cuáles son sus límites.
+
+### A. Pruebas unitarias del motor
+
+| ID    | Caso                                  | Resultado esperado                                                               |
+| ----- | ------------------------------------- | -------------------------------------------------------------------------------- |
+| UT-01 | Mensaje sin señales                   | Cero coincidencias y puntuación 0                                                |
+| UT-02 | Palabra de urgencia en minúsculas     | Coincidencia según la regla definida                                             |
+| UT-03 | Palabra de urgencia en mayúsculas     | Mismo comportamiento si la regla ignora mayúsculas                               |
+| UT-04 | Mensaje con varias categorías         | Cada regla aplicable se registra                                                 |
+| UT-05 | Una señal repetida varias veces       | Se aplica la política de puntuación por regla                                    |
+| UT-06 | Texto con tildes y caracteres Unicode | Comportamiento documentado y consistente                                         |
+| UT-07 | Texto con URL seguida de puntuación   | No se incorpora puntuación final ajena a la URL, si el patrón contempla ese caso |
+| UT-08 | Mensaje muy largo                     | Se rechaza al superar el límite                                                  |
+| UT-09 | Coincidencia con posición             | Los índices recuperan exactamente el fragmento                                   |
+| UT-10 | Puntuación acumulada superior a 100   | Resultado limitado a 100                                                         |
+
+Cada regla deberá tener, como mínimo, un caso positivo y uno negativo. Los patrones que tengan excepciones o ambigüedades importantes contarán con más casos.
+
+### B. Pruebas de integración de la API
+
+| ID    | Solicitud                                 | Criterio esperado                         |
+| ----- | ----------------------------------------- | ----------------------------------------- |
+| IT-01 | `GET /api/v1/health`                      | HTTP 200                                  |
+| IT-02 | `POST /api/v1/analyze` con texto válido   | HTTP 200 y respuesta conforme al contrato |
+| IT-03 | Texto vacío                               | Error de validación controlado            |
+| IT-04 | Texto demasiado largo                     | Error de validación controlado            |
+| IT-05 | JSON mal formado                          | Error HTTP, sin traza interna expuesta    |
+| IT-06 | Campos ausentes o de tipo incorrecto      | Error coherente con el esquema            |
+| IT-07 | Lote superior al límite, si se implementa | Solicitud rechazada de manera controlada  |
+
+FastAPI dispone de un cliente de pruebas que permite verificar los endpoints directamente con `pytest`, sin necesidad de abrir un puerto HTTP real. Esa será nuestra estrategia principal para las pruebas de integración.&#x20;
+
+[image](https://www.google.com/s2/favicons?domain=https://fastapi.tiangolo.com\&sz=32)
+
+FastAPI
+
++1
+
+
+
+### C. Pruebas de interfaz
+
+- El formulario impide o informa cuando el mensaje está vacío.
+- El botón de análisis muestra un estado de carga.
+- Un error del backend no bloquea permanentemente la interfaz.
+- La puntuación y el nivel coinciden con la respuesta del backend.
+- Las coincidencias resaltadas corresponden a los fragmentos originales.
+- La exportación CSV conserva correctamente tildes, comas, comillas y saltos de línea.
+- Los mensajes analizados no se interpretan como HTML ejecutable.
+
+### D. Evaluación de calidad del detector
+
+Crearemos un conjunto etiquetado de mensajes sintéticos con categorías como:
+
+- Mensajes normales.
+- Mensajes con señales de urgencia.
+- Mensajes con solicitudes de credenciales.
+- Mensajes con enlaces sospechosos.
+- Mensajes con varias señales simultáneas.
+- Mensajes legítimos que se parecen superficialmente a los sospechosos.
+
+Para cada mensaje, registraremos las señales esperadas y compararemos los resultados. En las categorías donde exista una etiqueta binaria fiable, podremos calcular precisión, exhaustividad (recall) y tasa de falsos positivos.
+
+No estableceremos una meta artificial de 100 % de detección. El informe debe mostrar las limitaciones reales de las reglas y ejemplos de errores.
+
+### Criterio global de aprobación
+
+La entrega estará lista cuando:
+
+- Todos los requisitos P0 tengan evidencia de cumplimiento.
+- Todas las pruebas P0 pasen.
+- Cada regla tenga pruebas positivas y negativas.
+- No queden defectos críticos conocidos.
+- La aplicación pueda instalarse y ejecutarse siguiendo el README.
+- El informe describa resultados, errores y limitaciones sin exagerar la capacidad de detección.
+
+## 10. Entregables finales
+
+El repositorio tendrá una estructura semejante a esta. Es una propuesta de organización, no código implementado.
+
+sentineltext/
+
+backend/
+
+API, motor regex, reglas y pruebas Python
+
+frontend/
+
+Componentes React, estilos y pruebas de interfaz
+
+docs/
+
+Requisitos, arquitectura, catálogo de reglas y casos de prueba
+
+data/
+
+Conjunto sintético de mensajes para evaluación
+
+README.md
+
+Instalación, ejecución, uso y solución de problemas
+
+requirements.txt o pyproject.toml
+
+Dependencias Python fijadas
+
+package.json y lockfile
+
+Dependencias del frontend y versiones reproducibles
+
+.gitignore
+
+Excluir entornos, cachés y archivos locales
+
+Además, prepararemos los documentos académicos solicitados por la guía: portada, introducción, problema, objetivos, marco teórico, metodología, diseño de expresiones regulares, implementación, pruebas, conclusiones, bibliografía y anexos.&#x20;
+
+Guia_Trabajo_Exploratorio_Expresiones_Regulares.docx
+
+
+
+## 11. Riesgos del proyecto y cómo los controlaremos
+
+| Riesgo                          | Impacto                             | Mitigación                                                           |
+| ------------------------------- | ----------------------------------- | -------------------------------------------------------------------- |
+| Patrones demasiado amplios      | Falsos positivos                    | Casos negativos y revisión de límites                                |
+| Patrones demasiado estrictos    | Falsos negativos                    | Variaciones lingüísticas y casos límite                              |
+| Puntuación engañosa             | Clasificaciones poco fiables        | Pesos documentados y evaluación con ejemplos                         |
+| Interfaz demasiado ambiciosa    | Retraso                             | Priorizar primero el flujo básico completo                           |
+| Dependencias incompatibles      | Problemas de instalación            | Fijar versiones y probar en entorno limpio                           |
+| Contenido malicioso en mensajes | Riesgos de ejecución o presentación | Tratar el texto como dato, escapar el contenido y no visitar enlaces |
+| Falta de tiempo                 | Entrega incompleta                  | Prioridades P0/P1 y congelación de funciones al final                |
+
+## 12. Validación final del plan
+
+Mi recomendación es mantener estas decisiones como la línea base del proyecto:
+
+- Tema: detector de señales de riesgo mediante expresiones regulares.
+- Modalidad: individual.
+- Duración: 14 días.
+- Arquitectura: React + TypeScript, FastAPI y motor regex independiente.
+- Persistencia: ninguna en la primera versión; historial de sesión opcional.
+- Prioridad: requisitos P0, pruebas, calidad del catálogo regex e informe académico.
+- Ampliaciones: lote, resaltado, estadísticas y CSV, únicamente cuando el núcleo esté estable.
+
+Antes de dar el plan por aprobado, hay una decisión que debemos cerrar porque afecta al diseño y al calendario.
+
+## Revisión de la línea base
+
+Confirma o ajusta las tres decisiones antes de pasar al diseño detallado de requisitos y reglas.
+
+1\. ¿Qué arquitectura prefieres?
+
+Python + FastAPI + React/TypeScript (recomendada)
+
+Python + FastAPI + HTML/CSS/JavaScript sin React
+
+Python con una aplicación web más sencilla y menos componentes separados
+
+2\. ¿Cómo manejamos el historial?
+
+Sin persistencia; solo resultados actuales (más seguro para el plazo)
+
+Historial temporal de la sesión del navegador
+
+SQLite local para guardar análisis entre sesiones
+
+3\. ¿Cómo priorizamos las dos semanas?
+
+Plazo estricto: entregar el MVP funcional aunque se eliminen ampliaciones
+
+Intentar incluir todas las funcionalidades P1, aceptando más presión al final
+
+Confirmar decisiones y continuar con la especificación
+
+No empezaremos a programar hasta que hayamos validado esa línea base y el catálogo de reglas. Así podremos construir SentinelText de forma ordenada, con decisiones justificadas y evidencia de que realmente funciona.
