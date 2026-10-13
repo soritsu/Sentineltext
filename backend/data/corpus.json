@@ -1,0 +1,89 @@
+{
+  "description": "Corpus sintético de evaluación para SentinelText",
+  "test_cases": [
+    {
+      "id": "CORPUS-01",
+      "text": "Visita https://example.com para más información",
+      "expected_rules": ["URL-001"],
+      "expected_level": "low",
+      "category": "links"
+    },
+    {
+      "id": "CORPUS-02",
+      "text": "Consulta example.com sin esquema",
+      "expected_rules": [],
+      "expected_level": "low",
+      "category": "negative_links"
+    },
+    {
+      "id": "CORPUS-03",
+      "text": "URGENTE: verifica tu cuenta de inmediato",
+      "expected_rules": ["URG-001"],
+      "expected_level": "low",
+      "category": "urgency"
+    },
+    {
+      "id": "CORPUS-04",
+      "text": "La atención no es urgente",
+      "expected_rules": ["URG-001"],
+      "expected_level": "low",
+      "category": "false_positive_context"
+    },
+    {
+      "id": "CORPUS-05",
+      "text": "Ingresa tu contraseña para continuar en el sistema",
+      "expected_rules": ["CRED-001"],
+      "expected_level": "high",
+      "category": "credentials"
+    },
+    {
+      "id": "CORPUS-06",
+      "text": "Nunca compartas tu contraseña con nadie",
+      "expected_rules": [],
+      "expected_level": "low",
+      "category": "negative_credentials"
+    },
+    {
+      "id": "CORPUS-07",
+      "text": "Ganaste un premio, reclama ahora mismo",
+      "expected_rules": ["PRIZE-001", "URG-001"],
+      "expected_level": "medium",
+      "category": "prize_urgency"
+    },
+    {
+      "id": "CORPUS-08",
+      "text": "El premio se entregará en la ceremonia anual",
+      "expected_rules": [],
+      "expected_level": "low",
+      "category": "negative_prize"
+    },
+    {
+      "id": "CORPUS-09",
+      "text": "Precio especial: Bs 250",
+      "expected_rules": ["MONEY-001"],
+      "expected_level": "low",
+      "category": "money_informative"
+    },
+    {
+      "id": "CORPUS-10",
+      "text": "HAS GANADO UN REGALO EXCLUSIVO QUE DEBES RECLAMAR AHORA MISMO EN https://example.com",
+      "expected_rules": ["URL-001", "URG-001", "PRIZE-001", "STYLE-002"],
+      "expected_level": "high",
+      "category": "multi_signal_high"
+    },
+    {
+      "id": "CORPUS-11",
+      "text": "Hola profesor, le envío la tarea de compiladores.",
+      "expected_rules": [],
+      "expected_level": "low",
+      "category": "clean_message"
+    },
+    {
+      "id": "CORPUS-12",
+      "text": "Atención!!!! Hay una oferta increíble para ti",
+      "expected_rules": ["STYLE-001"],
+      "expected_level": "low",
+      "category": "style_exclamation"
+    }
+  ]
+}
